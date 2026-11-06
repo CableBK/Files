@@ -22,6 +22,9 @@ void               nautilus_list_base_activate_selection (NautilusListBase *self
 NautilusFile      *nautilus_list_base_get_directory_as_file (NautilusListBase *self);
 NautilusViewModel *nautilus_list_base_get_model     (NautilusListBase *self);
 GtkWidget         *nautilus_list_base_get_scrolled_window (NautilusListBase *self);
+GtkWidget         *nautilus_list_base_get_overlay (NautilusListBase *self);
+void               nautilus_list_base_set_single_click_folders (NautilusListBase *self,
+                                                                gboolean          single_click_folders);
 void               nautilus_list_base_setup_gestures (NautilusListBase *self);
 
 /* Shareable helpers */

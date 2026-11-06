@@ -47,6 +47,11 @@ struct _NautilusListBasePrivate
 
     gboolean dnd_disabled;
     gboolean single_click_mode;
+    gboolean single_click_folders;
+
+    /* Item under the first press of a click sequence. Used to make sure a
+     * double click only activates when both presses hit the same item. */
+    NautilusViewItem *pressed_item;
 
     gboolean activate_on_release;
     gboolean deny_background_click;
@@ -237,13 +242,28 @@ on_item_click_pressed (GtkGestureClick *gesture,
     GdkModifierType modifiers;
     gboolean selection_mode;
 
+    g_autoptr (NautilusViewItem) item = nautilus_view_cell_get_item (cell);
+    gboolean single_click_item;
+
     button = gtk_gesture_single_get_current_button (GTK_GESTURE_SINGLE (gesture));
     modifiers = gtk_event_controller_get_current_event_state (GTK_EVENT_CONTROLLER (gesture));
     selection_mode = (modifiers & (GDK_CONTROL_MASK | GDK_SHIFT_MASK));
 
+    /* Some views (e.g. the column view) open folders with a single click,
+     * regardless of the click policy. */
+    single_click_item = (priv->single_click_mode ||
+                         (priv->single_click_folders &&
+                          item != NULL &&
+                          nautilus_file_is_directory (nautilus_view_item_get_file (item))));
+
+    if (n_press == 1)
+    {
+        g_set_object (&priv->pressed_item, item);
+    }
+
     /* Before anything else, store event state to be read by other handlers. */
     priv->deny_background_click = TRUE;
-    priv->activate_on_release = (priv->single_click_mode &&
+    priv->activate_on_release = (single_click_item &&
                                  button == GDK_BUTTON_PRIMARY &&
                                  n_press == 1 &&
                                  !selection_mode);
@@ -252,8 +272,16 @@ on_item_click_pressed (GtkGestureClick *gesture,
 
     /* It's safe to claim event sequence on press in the following cases because
      * they don't interfere with touch scrolling. */
-    if (button == GDK_BUTTON_PRIMARY && n_press == 2 && !priv->single_click_mode)
+    if (button == GDK_BUTTON_PRIMARY && n_press == 2 && !single_click_item)
     {
+        /* If the first press navigated somewhere else, the second press may
+         * land on an unrelated item. Don't activate it in that case. */
+        if (priv->single_click_folders && item != priv->pressed_item)
+        {
+            gtk_gesture_set_state (GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+            return;
+        }
+
         /* If Ctrl + Shift are held, we don't want to activate selection. But
          * we still need to claim the event, otherwise GtkListBase's default
          * gesture is going to trigger activation. */
@@ -363,7 +391,14 @@ on_view_click_pressed (GtkGestureClick *gesture,
 
     if (button == GDK_BUTTON_SECONDARY)
     {
-        g_signal_emit (self, signals[POPUP_BACKGROUND_CONTEXT_MENU], 0, x, y);
+        /* The gesture is attached to the overlay, but the signal reports
+         * coordinates relative to the view itself. */
+        graphene_point_t view_point = GRAPHENE_POINT_INIT (x, y);
+
+        gtk_widget_compute_point (priv->overlay, GTK_WIDGET (self),
+                                  &GRAPHENE_POINT_INIT (x, y), &view_point);
+        g_signal_emit (self, signals[POPUP_BACKGROUND_CONTEXT_MENU], 0,
+                       (double) view_point.x, (double) view_point.y);
     }
 }
 
@@ -922,6 +957,7 @@ base_setup_directory (NautilusListBase  *self,
     /* When double clicking on an item this deny_background_click can persist
      * because the new view interrupts the gesture sequence, so lets reset it.*/
     priv->deny_background_click = FALSE;
+    g_clear_object (&priv->pressed_item);
 
     /* When DnD is used to navigate between directories, the normal callbacks
      * are ignored. Update DnD variables here upon navigating to a directory*/
@@ -1057,6 +1093,7 @@ nautilus_list_base_dispose (GObject *object)
 
     g_clear_object (&priv->directory_as_file);
     g_clear_object (&priv->model);
+    g_clear_object (&priv->pressed_item);
     g_clear_handle_id (&priv->hover_timer_id, g_source_remove);
     g_clear_handle_id (&priv->scroll_timeout_id, g_source_remove);
 
@@ -1363,8 +1400,13 @@ nautilus_list_base_setup_gestures (NautilusListBase *self)
     GtkEventController *controller;
     GtkDropTarget *drop_target;
 
+    /* Attach the view-wide controllers to the overlay rather than to @self,
+     * so that subclasses which add extra widgets around the overlay (e.g. the
+     * column view's parent folder columns) don't get background clicks and
+     * drops meant for the current folder. For other views this is equivalent,
+     * as the overlay is the only child. */
     controller = GTK_EVENT_CONTROLLER (gtk_gesture_click_new ());
-    gtk_widget_add_controller (GTK_WIDGET (self), controller);
+    gtk_widget_add_controller (priv->overlay, controller);
     gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (controller), 0);
     g_signal_connect (controller, "pressed",
                       G_CALLBACK (on_view_click_pressed), self);
@@ -1378,8 +1420,39 @@ nautilus_list_base_setup_gestures (NautilusListBase *self)
     g_signal_connect (drop_target, "notify::value", G_CALLBACK (on_view_drag_value_notify), self);
     g_signal_connect (drop_target, "motion", G_CALLBACK (on_view_drag_motion), self);
     g_signal_connect (drop_target, "drop", G_CALLBACK (on_view_drop), self);
-    gtk_widget_add_controller (GTK_WIDGET (self), GTK_EVENT_CONTROLLER (drop_target));
+    gtk_widget_add_controller (priv->overlay, GTK_EVENT_CONTROLLER (drop_target));
     priv->view_drop_target = drop_target;
+}
+
+/**
+ * nautilus_list_base_set_single_click_folders:
+ * @self: a #NautilusListBase
+ * @single_click_folders: whether folders open on a single click
+ *
+ * When enabled, a single primary click on a folder activates it even if the
+ * click policy is set to double click. Files keep following the click policy.
+ */
+void
+nautilus_list_base_set_single_click_folders (NautilusListBase *self,
+                                             gboolean          single_click_folders)
+{
+    NautilusListBasePrivate *priv = nautilus_list_base_get_instance_private (self);
+
+    priv->single_click_folders = single_click_folders;
+}
+
+/**
+ * nautilus_list_base_get_overlay:
+ *
+ * Returns: (transfer none): the widget holding the scrolled window and any
+ *   overlays. Subclasses may re-parent it to place widgets beside the view.
+ */
+GtkWidget *
+nautilus_list_base_get_overlay (NautilusListBase *self)
+{
+    NautilusListBasePrivate *priv = nautilus_list_base_get_instance_private (self);
+
+    return priv->overlay;
 }
 
 void

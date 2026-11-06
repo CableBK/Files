@@ -139,6 +139,8 @@ libnautilus_sources = [
   'nautilus-global-preferences.h',
   'nautilus-grid-cell.c',
   'nautilus-grid-cell.h',
+  'nautilus-column-view.c',
+  'nautilus-column-view.h',
   'nautilus-grid-view.c',
   'nautilus-grid-view.h',
   'nautilus-grid-view-captions-dialog.c',

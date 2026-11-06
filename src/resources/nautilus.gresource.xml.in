@@ -67,6 +67,7 @@
     <file preprocess="xml-stripblanks">icons/scalable/actions/info-outline-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/nautilus-file-chooser-options-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/nautilus-search-filters-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/nautilus-view-columns-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/network-computer-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/paper-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/quotation-symbolic.svg</file>

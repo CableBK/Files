@@ -171,6 +171,26 @@
   border-radius: 12px;
 }
 
+/* Finder-style column (Miller columns) view */
+.nautilus-column-view listview {
+  padding: 6px;
+  border-spacing: 2px;
+}
+
+.nautilus-column-view listview > row {
+  border-radius: 6px;
+  padding: 0px;
+}
+
+.nautilus-column-view .nautilus-view-cell,
+.nautilus-column-view .column-view-parent-row {
+  padding: 3px 6px;
+}
+
+.nautilus-column-view .column-view-preview {
+  margin: 24px 18px;
+}
+
 /* Column view */
 
 /* Setup padding on the list. Horizontal padding must be set on the columnview
