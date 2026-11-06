@@ -60,4 +60,21 @@
       <attribute name="nautilus-menu-item">relevance</attribute>
     </item>
   </menu>
+  <menu id="view_mode_section">
+    <item>
+      <attribute name="action">slot.files-view-mode</attribute>
+      <attribute name="target" type="u">1</attribute>
+      <attribute name="label" translatable="yes" context="View mode">_List</attribute>
+    </item>
+    <item>
+      <attribute name="action">slot.files-view-mode</attribute>
+      <attribute name="target" type="u">2</attribute>
+      <attribute name="label" translatable="yes" context="View mode">_Grid</attribute>
+    </item>
+    <item>
+      <attribute name="action">slot.files-view-mode</attribute>
+      <attribute name="target" type="u">4</attribute>
+      <attribute name="label" translatable="yes" context="View mode">_Columns</attribute>
+    </item>
+  </menu>
 </interface>

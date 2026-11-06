@@ -256,4 +256,10 @@ nautilus_view_controls_init (NautilusViewControls *self)
     self->sort_section = G_MENU_MODEL (g_object_ref (gtk_builder_get_object (builder, "sort_section")));
     g_menu_item_set_section (sort_item, self->sort_section);
     g_menu_insert_item (G_MENU (self->view_menu), SORT_ITEM_POSITION, sort_item);
+
+    /* List / Grid / Columns choice, at the top of the menu. The targets are
+     * the NAUTILUS_VIEW_*_ID values. */
+    GMenuModel *view_mode_section = G_MENU_MODEL (gtk_builder_get_object (builder, "view_mode_section"));
+
+    g_menu_insert_section (G_MENU (self->view_menu), 0, NULL, view_mode_section);
 }

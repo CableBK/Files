@@ -273,6 +273,17 @@ nautilus_window_slot_get_view_id_for_location (NautilusWindowSlot *self,
         return NAUTILUS_VIEW_NETWORK_ID;
     }
 
+    /* Search results, Recent and Starred are flat lists of files from many
+     * folders, which don't fit in columns. Use the list view for them, like
+     * Finder does. */
+    if (self->default_view_id == NAUTILUS_VIEW_COLUMN_ID &&
+        (g_file_has_uri_scheme (location, SCHEME_SEARCH) ||
+         g_file_has_uri_scheme (location, SCHEME_RECENT) ||
+         g_file_has_uri_scheme (location, SCHEME_STARRED)))
+    {
+        return NAUTILUS_VIEW_LIST_ID;
+    }
+
     return self->default_view_id;
 }
 
@@ -1075,7 +1086,8 @@ change_files_view_mode (NautilusWindowSlot *self,
                         guint               view_id)
 {
     g_return_if_fail (view_id == NAUTILUS_VIEW_LIST_ID ||
-                      view_id == NAUTILUS_VIEW_GRID_ID);
+                      view_id == NAUTILUS_VIEW_GRID_ID ||
+                      view_id == NAUTILUS_VIEW_COLUMN_ID);
 
     if (self->default_view_id != view_id)
     {
@@ -1100,10 +1112,15 @@ action_files_view_mode_toggle (GSimpleAction *action,
         return;
     }
 
+    /* Cycle through list, grid and column views. */
     current_view_id = nautilus_files_view_get_view_id (self->content_view);
     if (current_view_id == NAUTILUS_VIEW_LIST_ID)
     {
         change_files_view_mode (self, NAUTILUS_VIEW_GRID_ID);
+    }
+    else if (current_view_id == NAUTILUS_VIEW_GRID_ID)
+    {
+        change_files_view_mode (self, NAUTILUS_VIEW_COLUMN_ID);
     }
     else
     {
@@ -1326,6 +1343,9 @@ nautilus_window_slot_init (NautilusWindowSlot *self)
                                        "slot.files-view-mode", "<control>2",
                                        "u", NAUTILUS_VIEW_GRID_ID);
     ADD_SHORTCUT_FOR_ACTION_WITH_ARGS (self->shortcuts,
+                                       "slot.files-view-mode", "<control>3",
+                                       "u", NAUTILUS_VIEW_COLUMN_ID);
+    ADD_SHORTCUT_FOR_ACTION_WITH_ARGS (self->shortcuts,
                                        "slot.open-location", "<alt>Home|HomePage|Start",
                                        "s", home_uri);
     ADD_SHORTCUT_FOR_ACTION_WITH_ARGS (self->shortcuts,
@@ -1365,7 +1385,8 @@ nautilus_window_slot_init (NautilusWindowSlot *self)
 
     self->default_view_id = g_settings_get_enum (nautilus_preferences, NAUTILUS_PREFERENCES_DEFAULT_FOLDER_VIEWER);
     if (G_UNLIKELY (self->default_view_id != NAUTILUS_VIEW_LIST_ID &&
-                    self->default_view_id != NAUTILUS_VIEW_GRID_ID))
+                    self->default_view_id != NAUTILUS_VIEW_GRID_ID &&
+                    self->default_view_id != NAUTILUS_VIEW_COLUMN_ID))
     {
         g_warning ("Invalid value stored for 'default-folder-viewer' key for "
                    "the 'org.gnome.nautilus.preferences' schemas. Installed "

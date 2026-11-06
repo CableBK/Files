@@ -25,6 +25,7 @@
   <enum id="org.gnome.nautilus.FolderView">
     <value value="1" nick="list-view"/>
     <value value="2" nick="icon-view"/>
+    <value value="4" nick="column-view"/>
   </enum>
 
   <enum id="org.gnome.nautilus.SortOrder">

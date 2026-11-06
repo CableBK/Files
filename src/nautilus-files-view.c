@@ -41,6 +41,7 @@
 #include "nautilus-filename-utilities.h"
 #include "nautilus-floating-bar.h"
 #include "nautilus-global-preferences.h"
+#include "nautilus-column-view.h"
 #include "nautilus-grid-view.h"
 #include "nautilus-grid-view-captions-dialog.h"
 #include "nautilus-list-view.h"
@@ -9242,6 +9243,12 @@ create_inner_view (NautilusFilesView *self,
         }
         break;
 
+        case NAUTILUS_VIEW_COLUMN_ID:
+        {
+            self->list_base = NAUTILUS_LIST_BASE (nautilus_column_view_new ());
+        }
+        break;
+
         default:
         {
             g_critical ("Unknown view type ID: %d. Falling back to list.", id);
@@ -9276,8 +9283,14 @@ nautilus_files_view_get_toggle_icon_name (NautilusFilesView *self)
         }
         break;
 
-        case NAUTILUS_VIEW_NETWORK_ID:
         case NAUTILUS_VIEW_GRID_ID:
+        {
+            return "nautilus-view-columns-symbolic";
+        }
+        break;
+
+        case NAUTILUS_VIEW_NETWORK_ID:
+        case NAUTILUS_VIEW_COLUMN_ID:
         {
             return "view-list-symbolic";
         }
@@ -9317,8 +9330,18 @@ nautilus_files_view_get_toggle_tooltip (NautilusFilesView  *self,
         }
         break;
 
-        case NAUTILUS_VIEW_NETWORK_ID:
         case NAUTILUS_VIEW_GRID_ID:
+        {
+            if (description != NULL)
+            {
+                *description = _("View folders as columns");
+            }
+            return _("Column View");
+        }
+        break;
+
+        case NAUTILUS_VIEW_NETWORK_ID:
+        case NAUTILUS_VIEW_COLUMN_ID:
         {
             if (description != NULL)
             {

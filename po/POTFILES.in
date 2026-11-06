@@ -39,6 +39,7 @@ src/nautilus-files-view.c
 src/nautilus-files-view-dnd.c
 src/nautilus-floating-bar.c
 src/nautilus-global-preferences.c
+src/nautilus-column-view.c
 src/nautilus-grid-view.c
 src/nautilus-grid-view-captions-dialog.c
 src/nautilus-internal-place-file.c

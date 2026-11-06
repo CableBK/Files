@@ -9,6 +9,7 @@
 /* Keep values in sync with the org.gnome.nautilus.FolderView schema enums: */
 #define NAUTILUS_VIEW_LIST_ID            1
 #define NAUTILUS_VIEW_GRID_ID            2
+#define NAUTILUS_VIEW_COLUMN_ID          4
 /* Special ids, not used by GSettings schemas: */
 #define NAUTILUS_VIEW_NETWORK_ID         3
 #define NAUTILUS_VIEW_INVALID_ID         0
